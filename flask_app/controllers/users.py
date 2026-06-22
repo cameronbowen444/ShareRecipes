@@ -23,14 +23,14 @@ def register():
     last_name = request.form.get('last_name', '').strip()
     email = request.form.get('email', '').strip()
     password = request.form.get('password', '')
-    confirm_password = request.form.get('confirm_password', '')
+    confirm = request.form.get('confirm', '')
 
     form_data = {
         "first_name": first_name,
         "last_name": last_name,
         "email": email,
         "password": password,
-        "confirm_password": confirm_password
+        "confirm": confirm
     }
 
     if not user.User.validate_user(form_data):
