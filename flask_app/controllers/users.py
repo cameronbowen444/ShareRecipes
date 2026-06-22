@@ -1,35 +1,58 @@
-from flask_app import app 
+from flask_app import app
 from flask import render_template, redirect, request, session, flash
 from flask_app.models import user
 from flask_app.models import recipe
 from flask_bcrypt import Bcrypt
+
 bcrypt = Bcrypt(app)
+
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+
 @app.route('/register')
 def index2():
-    return render_template('/index2.html')
+    return render_template('index2.html')
 
 
 @app.route('/validate-register', methods=['POST'])
 def register():
-    if not user.User.validate_user(request.form):
-        return redirect('/register')
-    
-    data = {
-        "first_name" : request.form['first_name'],
-        "last_name" : request.form['last_name'],
-        "email" : request.form['email'],
-        "password" : bcrypt.generate_password_hash(request.form['password'])
+    first_name = request.form.get('first_name', '').strip()
+    last_name = request.form.get('last_name', '').strip()
+    email = request.form.get('email', '').strip()
+    password = request.form.get('password', '')
+    confirm_password = request.form.get('confirm_password', '')
+
+    form_data = {
+        "first_name": first_name,
+        "last_name": last_name,
+        "email": email,
+        "password": password,
+        "confirm_password": confirm_password
     }
-    
+
+    if not user.User.validate_user(form_data):
+        return redirect('/register')
+
+    data = {
+        "first_name": first_name,
+        "last_name": last_name,
+        "email": email,
+        "password": bcrypt.generate_password_hash(password)
+    }
+
     user_id = user.User.save(data)
+
+    if not user_id:
+        flash("Something went wrong while creating your account.", "register")
+        return redirect('/register')
+
     session['user_id'] = user_id
 
     return redirect('/dashboard')
+
 
 @app.route('/validate-login', methods=['POST'])
 def login():

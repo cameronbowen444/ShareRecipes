@@ -1,4 +1,4 @@
-from flask_app import app 
+from flask_app import app
 from flask import render_template, redirect, request, session, flash, url_for
 from flask_app.models import recipe
 from flask_app.models import user
@@ -8,6 +8,7 @@ import requests
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
+
 
 def get_youtube_videos(search_term):
     api_key = os.getenv("YOUTUBE_API_KEY", "").strip()
@@ -26,32 +27,49 @@ def get_youtube_videos(search_term):
         "key": api_key
     }
 
-    response = requests.get(url, params=params)
+    try:
+        response = requests.get(url, params=params, timeout=8)
 
-    print("YouTube status code:", response.status_code)
-    print("YouTube response:", response.text)
+        print("YouTube status code:", response.status_code)
 
-    if response.status_code != 200:
+        if response.status_code != 200:
+            print("YouTube response:", response.text)
+            return []
+
+        data = response.json()
+        videos = []
+
+        for item in data.get("items", []):
+            snippet = item.get("snippet", {})
+            thumbnails = snippet.get("thumbnails", {})
+            medium_thumbnail = thumbnails.get("medium", {})
+
+            video_id = item.get("id", {}).get("videoId")
+
+            if not video_id:
+                continue
+
+            videos.append({
+                "title": snippet.get("title", "Untitled Video"),
+                "description": snippet.get("description", ""),
+                "thumbnail": medium_thumbnail.get("url", ""),
+                "video_id": video_id
+            })
+
+        return videos
+
+    except requests.RequestException as e:
+        print("YouTube API error:", e)
         return []
 
-    data = response.json()
-    videos = []
-
-    for item in data.get("items", []):
-        videos.append({
-            "title": item["snippet"]["title"],
-            "description": item["snippet"]["description"],
-            "thumbnail": item["snippet"]["thumbnails"]["medium"]["url"],
-            "video_id": item["id"]["videoId"]
-        })
-
-    return videos
 
 @app.route('/new')
 def new():
     if 'user_id' not in session:
-        return redirect('/logout')
+        return redirect('/')
+
     return render_template('new.html')
+
 
 @app.route('/recipe/<int:id>')
 def show_recipe(id):
@@ -68,6 +86,10 @@ def show_recipe(id):
 
     one_recipe = recipe.Recipe.get_recipe_id(data)
 
+    if not one_recipe:
+        flash("Recipe not found.", "recipe")
+        return redirect('/dashboard')
+
     youtube_videos = get_youtube_videos(one_recipe.name + " recipe")
 
     return render_template(
@@ -81,30 +103,50 @@ def show_recipe(id):
 @app.route('/edit/<int:id>')
 def edit_recipe(id):
     if 'user_id' not in session:
-        return redirect('/logout')
+        return redirect('/')
+
     user_data = {
-        'id' : session['user_id']
+        'id': session['user_id']
     }
+
     data = {
-        'id' : id
+        'id': id
     }
-    return render_template('edit.html', user=user.User.get_id(user_data), recipe=recipe.Recipe.get_recipe_id(data))
+
+    one_recipe = recipe.Recipe.get_recipe_id(data)
+
+    if not one_recipe:
+        flash("Recipe not found.", "recipe")
+        return redirect('/dashboard')
+
+    return render_template(
+        'edit.html',
+        user=user.User.get_id(user_data),
+        recipe=one_recipe
+    )
+
 
 @app.route('/update', methods=['POST'])
 def update():
     if 'user_id' not in session:
-        return redirect('/logout')
+        return redirect('/')
+
+    recipe_id = request.form.get('id')
+
+    if not recipe_id:
+        flash("Recipe ID is missing.", "recipe")
+        return redirect('/dashboard')
 
     if not recipe.Recipe.validate_recipe(request.form):
-        return redirect(url_for("edit_recipe", id=request.form['id']))
+        return redirect(url_for("edit_recipe", id=recipe_id))
 
     data = {
-        "id": request.form["id"],
-        "name": request.form["name"],
-        "description": request.form["description"],
-        "instructions": request.form["instructions"],
-        "date": request.form["date"],
-        "under30": request.form.get("under30")
+        "id": recipe_id,
+        "name": request.form.get("name", "").strip(),
+        "description": request.form.get("description", "").strip(),
+        "instructions": request.form.get("instructions", "").strip(),
+        "date": request.form.get("date", ""),
+        "under30": request.form.get("under30", "0")
     }
 
     recipe.Recipe.edit_recipe(data)
@@ -115,27 +157,34 @@ def update():
 @app.route('/add_recipe', methods=['POST'])
 def newrecipe():
     if 'user_id' not in session:
-        return redirect('/logout')
+        return redirect('/')
+
     if not recipe.Recipe.validate_recipe(request.form):
         return redirect('/new')
 
     data = {
-        "name" : request.form['name'],
-        "description" : request.form['description'],
-        "instructions" : request.form['instructions'],
-        "date" : request.form['date'],
-        "under30" : request.form['under30'],
+        "name": request.form.get("name", "").strip(),
+        "description": request.form.get("description", "").strip(),
+        "instructions": request.form.get("instructions", "").strip(),
+        "date": request.form.get("date", ""),
+        "under30": request.form.get("under30", "0"),
         "user_id": session['user_id']
     }
+
     recipe.Recipe.save_recipe(data)
+
     return redirect('/dashboard')
+
 
 @app.route('/delete/<int:id>')
 def destroy(id):
     if 'user_id' not in session:
-        return redirect('/logout')
+        return redirect('/')
+
     data = {
-        "id" : id
+        "id": id
     }
+
     recipe.Recipe.delete_recipe(data)
+
     return redirect('/dashboard')
