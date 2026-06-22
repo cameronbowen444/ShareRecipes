@@ -1,4 +1,6 @@
-from flask import Flask 
+import os
+from flask import Flask
 
 app = Flask(__name__)
-app.secret_key = "camcambabythebest123456"
+
+app.secret_key = os.environ.get("SECRET_KEY", "camcambabythebest123456")
