@@ -40,7 +40,7 @@ def register():
         "first_name": first_name,
         "last_name": last_name,
         "email": email,
-        "password": bcrypt.generate_password_hash(password)
+        "password": bcrypt.generate_password_hash(password).decode("utf-8")
     }
 
     user_id = user.User.save(data)

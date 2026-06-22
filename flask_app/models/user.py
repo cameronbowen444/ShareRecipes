@@ -16,29 +16,50 @@ class User:
         self.updated_at = data['updated_at']
         self.recipes = []
 
-    @staticmethod 
+    @staticmethod
     def validate_user(user):
-        query = "SELECT * FROM users WHERE email = %(email)s;"
-        results = connectToMySQL(User.db).query_db(query, user)
         is_valid = True
-        if len(results) >= 1:
-            flash("Email already in use!", "register")
+
+        email = user.get('email', '').strip()
+        first_name = user.get('first_name', '').strip()
+        last_name = user.get('last_name', '').strip()
+        password = user.get('password', '')
+        confirm = user.get('confirm', '')
+
+        if not email:
+            flash("Email is required!", "register")
             is_valid = False
-        if len(user['first_name']) < 3:
-            flash("First name must be at least 3 characters!", "register")
-            is_valid = False
-        if len(user['last_name']) < 3:
-            flash("Last name must be at least 3 characters!", "register")
-            is_valid = False
-        if not EMAIL_REGEX.match(user['email']):
+        elif not EMAIL_REGEX.match(email):
             flash("Invalid email format!", "register")
             is_valid = False
-        if len(user['password']) < 8 or len(user['password']) == None:
-            flash("Password must be at least 8 charcters!", "register")
+        else:
+            query = "SELECT * FROM users WHERE email = %(email)s;"
+            results = connectToMySQL(User.db).query_db(query, {"email": email})
+
+            if results is False:
+                flash("Database error. Please try again.", "register")
+                return False
+
+            if len(results) >= 1:
+                flash("Email already in use!", "register")
+                is_valid = False
+
+        if len(first_name) < 3:
+            flash("First name must be at least 3 characters!", "register")
             is_valid = False
-        if user['confirm'] != user['password']:
+
+        if len(last_name) < 3:
+            flash("Last name must be at least 3 characters!", "register")
             is_valid = False
+
+        if len(password) < 8:
+            flash("Password must be at least 8 characters!", "register")
+            is_valid = False
+
+        if confirm != password:
             flash("Passwords do not match!", "register")
+            is_valid = False
+
         return is_valid
 
 
