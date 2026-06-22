@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign In</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body class="cookbook-dashboard-page">
+    <nav class="navbar cookbook-navbar">
+      <div
+        class="container-fluid px-4 py-2 d-flex flex-column flex-md-row gap-3"
+      >
+        <a class="navbar-brand fw-bold text-center text-md-start">
+          Mama's CookBook
+        </a>
+
+        <div class="d-flex gap-2">
+          <a href="/dashboard" class="btn cookbook-btn-main text-nowrap"
+            >Home</a
+          >
+
+          <form action="/logout" method="post">
+            <input
+              class="btn cookbook-btn-outline text-nowrap"
+              value="Log Out"
+              type="submit"
+            />
+          </form>
+        </div>
+      </div>
+    </nav>
+
+    <main class="cookbook-dashboard-wrapper">
+      <div class="container cookbook-container">
+        <div class="recipe-form-card">
+          <div class="form-header text-center text-md-start">
+            <div class="cookbook-badge">EDIT RECIPE</div>
+            <h1>Edit Recipe</h1>
+            <p>
+              Update your recipe details, cooking instructions, and prep time.
+            </p>
+          </div>
+
+          <form action="/update" method="post">
+            {% with messages = get_flashed_messages(category_filter=['recipe'])
+            %} {% if messages %}
+            <div class="alert cookbook-alert" role="alert">
+              <strong>Recipe Errors</strong>
+              {% for message in messages %}
+              <p>{{message}}</p>
+              {% endfor %}
+            </div>
+            {% endif %} {% endwith %}
+
+            <input type="hidden" name="id" value="{{recipe.id}}" />
+
+            <div class="row g-4">
+              <div class="col-12 col-lg-7">
+                <div class="mb-4">
+                  <label class="form-label">Recipe Name</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value="{{recipe.name}}"
+                    class="form-control cookbook-input"
+                    placeholder="Example: Garlic Butter Chicken Pasta"
+                  />
+                </div>
+
+                <div class="mb-4">
+                  <label class="form-label">Description</label>
+                  <textarea
+                    name="description"
+                    rows="5"
+                    class="form-control cookbook-input"
+                    placeholder="Briefly describe the recipe..."
+                  >
+{{recipe.description}}</textarea
+                  >
+                </div>
+
+                <div class="mb-4">
+                  <label class="form-label">Instructions</label>
+                  <textarea
+                    name="instructions"
+                    rows="6"
+                    class="form-control cookbook-input"
+                    placeholder="Write the cooking steps..."
+                  >
+{{recipe.instructions}}</textarea
+                  >
+                </div>
+              </div>
+
+              <div class="col-12 col-lg-5">
+                <div class="side-panel">
+                  <div class="mb-4">
+                    <label class="form-label">Date Made</label>
+                    <input
+                      type="date"
+                      name="date"
+                      value="{{recipe.date }}"
+                      class="form-control cookbook-input"
+                    />
+                  </div>
+
+                  <div class="mb-4">
+                    <label class="form-label">Under 30 Minutes?</label>
+
+                    <div class="cookbook-radio-group">
+                    <label class="cookbook-radio">
+                      <input 
+                        type="radio" 
+                        name="under30" 
+                        value="1"
+                        {% if recipe.under30 == 1 or recipe.under30 == "1" or recipe.under30 == True %}checked{% endif %}
+                      />
+                      <span>Yes, quick recipe</span>
+                    </label>
+
+                    <label class="cookbook-radio">
+                      <input 
+                        type="radio" 
+                        name="under30" 
+                        value="0"
+                        {% if recipe.under30 == 0 or recipe.under30 == "0" or recipe.under30 == False %}checked{% endif %}
+                      />
+                      <span>No, takes longer</span>
+                    </label>
+                  </div>
+
+                  <div class="recipe-tip">
+                    <h5>Edit Tip</h5>
+                    <p>
+                      Make sure the description is short, and keep the
+                      instructions easy to follow.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex flex-column flex-sm-row gap-2 mt-4">
+              <button type="submit" class="btn cookbook-btn-main">
+                Update Recipe
+              </button>
+              <a href="/dashboard" class="btn cookbook-btn-outline">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
