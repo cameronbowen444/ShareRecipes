@@ -33,16 +33,23 @@ def register():
 
 @app.route('/validate-login', methods=['POST'])
 def login():
-    
-    users = user.User.get_email(request.form)
+    email = request.form.get('email', '').strip()
+    password = request.form.get('password', '')
+
+    if not email or not password:
+        flash('Email and password are required.', 'login')
+        return redirect('/')
+
+    users = user.User.get_email({"email": email})
 
     if not users:
         flash('Invalid Email/Password', 'login')
         return redirect('/')
-    if not bcrypt.check_password_hash(users.password, request.form['password']):
-        flash('Invaild Email/Password', 'login')
+
+    if not bcrypt.check_password_hash(users.password, password):
+        flash('Invalid Email/Password', 'login')
         return redirect('/')
-    
+
     session['user_id'] = users.id
 
     return redirect('/dashboard')
